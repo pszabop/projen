@@ -15,7 +15,7 @@ export function cleanup(dir: string) {
 }
 
 function findGeneratedFiles(dir: string) {
-  const ignore = [...readGitIgnore(dir), 'node_modules/**'];
+  const ignore = [...readNpmIgnore(dir), ...readGitIgnore(dir), 'node_modules/**'];
 
   const files = glob.sync('**', {
     ignore,
@@ -53,3 +53,16 @@ function readGitIgnore(dir: string) {
     .split('\n');
 }
 
+function readNpmIgnore(dir: string) {
+  const filepath = path.join(dir, '.npmignore');
+  if (!fs.pathExistsSync(filepath)) {
+    return [];
+  }
+
+  return fs.readFileSync(filepath, 'utf-8')
+    .split('\n')
+    .filter(x => !x.startsWith('#') && !x.startsWith('!'))
+    .map(x => `${x}\n${x}/**`)
+    .join('\n')
+    .split('\n');
+}

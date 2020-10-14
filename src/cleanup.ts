@@ -17,8 +17,10 @@ export function cleanup(dir: string) {
 function findGeneratedFiles(dir: string) {
   const ignore = [...readNpmIgnore(dir), ...readGitIgnore(dir), 'node_modules/**'];
 
+  console.log(`ignored files: ${ignore}`);
+
   const files = glob.sync('**', {
-    ignore,
+    ignore: ignore,
     cwd: dir,
     dot: true,
     nodir: true,
@@ -62,7 +64,17 @@ function readNpmIgnore(dir: string) {
   return fs.readFileSync(filepath, 'utf-8')
     .split('\n')
     .filter(x => !x.startsWith('#') && !x.startsWith('!'))
-    .map(x => `${x}\n${x}/**`)
+    .map(x => {
+      // handle starting slash.  XXX should only do this on root dir per spec
+      // @see https://github.com/npm/npm/issues/1912
+      // XXX same problem exists for readGitIgnore above
+      if (x.substr(0, 1) == '/') {
+        const remainingPath = x.substr(1);
+        return `${remainingPath}\n${remainingPath}/**`;
+      } else {
+        return `${x}\n${x}/**`;
+      }
+    })
     .join('\n')
     .split('\n');
 }
